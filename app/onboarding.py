@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from .config import DATA_DIR, GEMINI_MODEL
+from .config import DATA_DIR
 from .fallback import pdf_text
 
 try:
@@ -61,7 +61,8 @@ def sample_attachments():
              "name": f"{d}.pdf", "url": f"/media/docs/{d}.pdf"} for d in SAMPLE_DOCS]
 
 
-def extract_with_gemini(client, attachments, known_tags):
+def extract_with_gemini(gemini, attachments, known_tags):
+    client = gemini.client
     parts = [types.Part.from_bytes(data=a["path"].read_bytes(), mime_type="application/pdf") for a in attachments]
     parts.append(f"""These are a chemical plant's safety documents (HAZOP report, SOPs, standards).
 Draft the plant's risk model:
@@ -74,7 +75,7 @@ Draft the plant's risk model:
 Every item must cite its source: document id (as printed in the document header/footer), section or node id,
 and page number. Use only what the documents say. Never invent numbers.""")
     resp = client.models.generate_content(
-        model=GEMINI_MODEL, contents=parts,
+        model=gemini.model, contents=parts,
         config=types.GenerateContentConfig(response_mime_type="application/json",
                                            response_schema=RiskModelDraft, temperature=0))
     return RiskModelDraft.model_validate(json.loads(resp.text)).model_dump()

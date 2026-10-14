@@ -42,7 +42,7 @@ export default function Phone({ me, live, frame }) {
             {connected ? <span className="text-emerald-400">●</span> : <span className="text-red-400">●</span>} You: {user?.name} · {user?.title}
           </div>
         </div>
-        <ModeBadge mode={dashboard?.mode} small />
+        <ModeBadge mode={dashboard?.mode} gemini={dashboard?.gemini} small />
         <button onClick={() => setDemo(true)} className="rounded-lg p-1.5 text-ink-300 hover:bg-ink-800" title="Demo script">
           <Clapperboard className="h-5 w-5" />
         </button>

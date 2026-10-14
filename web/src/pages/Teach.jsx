@@ -42,7 +42,7 @@ export default function Teach({ live }) {
           <div className="text-[15px] font-extrabold">Teach Sanjaya your plant</div>
           <div className="text-[11.5px] text-ink-400">From HAZOP and SOP documents to a reviewed risk model</div>
         </div>
-        <div className="ml-auto"><ModeBadge mode={dashboard?.mode} /></div>
+        <div className="ml-auto"><ModeBadge mode={dashboard?.mode} gemini={dashboard?.gemini} /></div>
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-5 p-5 lg:grid-cols-12">

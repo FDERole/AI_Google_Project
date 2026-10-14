@@ -5,6 +5,7 @@ It never decides limits: numbers it reports are checked against the plant's
 documented data by the deterministic code in engine.py and parts.py.
 """
 import json
+import logging
 import re
 from typing import List, Literal, Optional
 
@@ -17,6 +18,12 @@ try:
     from google.genai import types
 except ImportError:  # pragma: no cover
     genai = None
+
+
+log = logging.getLogger("sanjaya.gemini")
+
+# Tried in order if GEMINI_MODEL doesn't answer (model names get retired over time).
+FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
 
 
 class Interpretation(BaseModel):
@@ -57,9 +64,32 @@ class Gemini:
     def __init__(self):
         self.client = genai.Client(api_key=GEMINI_API_KEY) if (genai and GEMINI_API_KEY) else None
 
+    model = GEMINI_MODEL
+    status = "unchecked"   # unchecked | ok | failed
+    error = None
+
     @property
     def available(self):
-        return self.client is not None
+        return self.client is not None and self.status != "failed"
+
+    def check(self):
+        """Find a model that actually answers with this key. Called once at startup."""
+        if self.client is None:
+            return
+        candidates = list(dict.fromkeys([GEMINI_MODEL] + FALLBACK_MODELS))
+        errors = []
+        for name in candidates:
+            try:
+                resp = self.client.models.generate_content(model=name, contents="Reply with the word OK.")
+                if resp.text:
+                    self.model, self.status, self.error = name, "ok", None
+                    log.info("Gemini ready with model %s", name)
+                    return
+            except Exception as exc:
+                errors.append(f"{name}: {str(exc)[:160]}")
+        self.status = "failed"
+        self.error = " | ".join(errors)[:600]
+        log.error("No Gemini model worked, running offline. %s", self.error)
 
     def _call(self, prompt, schema, attachments=()):
         parts = []
@@ -67,7 +97,7 @@ class Gemini:
             parts.append(types.Part.from_bytes(data=att["bytes"], mime_type=att["mime"]))
         parts.append(prompt)
         resp = self.client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=self.model,
             contents=parts,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -124,8 +154,8 @@ Is that a yes (confirming), a no (correcting), or unclear? Include the transcrip
         prompt = ("Transcribe this voice note exactly, in its original language (Hindi in Devanagari, Hinglish "
                   "in Latin script, English as spoken). Return only the transcript, or an empty string if silent.")
         parts = [types.Part.from_bytes(data=a["bytes"], mime_type=a["mime"]) for a in attachments] + [prompt]
-        resp = self.client.models.generate_content(model=GEMINI_MODEL, contents=parts)
-        return resp.text.strip()
+        resp = self.client.models.generate_content(model=self.model, contents=parts)
+        return (resp.text or "").strip()
 
     def extract_specs(self, attachment):
         prompt = """This is a datasheet (or nameplate photo) for an industrial exhaust fan.
@@ -173,7 +203,7 @@ def _ask(self, question, asker, tool_call, on_tool):
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
     for _ in range(6):
-        resp = self.client.models.generate_content(model=GEMINI_MODEL, contents=contents, config=config)
+        resp = self.client.models.generate_content(model=self.model, contents=contents, config=config)
         calls = resp.function_calls or []
         if not calls:
             answer = (resp.text or "").strip()

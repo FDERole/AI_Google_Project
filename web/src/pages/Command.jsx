@@ -52,7 +52,7 @@ export default function Command({ live, compact = false }) {
           <span className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex ${connected ? "text-emerald-300" : "text-red-300"}`}>
             <Activity className="h-3.5 w-3.5" /> {connected ? "Live" : "Reconnecting"}
           </span>
-          <ModeBadge mode={dashboard.mode} />
+          <ModeBadge mode={dashboard.mode} gemini={dashboard.gemini} />
           {!compact && (
             <>
               <a href="#/teach" className="hidden items-center gap-1.5 rounded-xl bg-ink-800 px-3 py-1.5 text-xs font-bold ring-1 ring-ink-700 hover:bg-ink-700 md:inline-flex">

@@ -24,12 +24,20 @@ export function Eye({ size = 40, active = false }) {
   );
 }
 
-export function ModeBadge({ mode, small }) {
-  const gemini = mode === "gemini";
+export function ModeBadge({ mode, gemini, small }) {
+  const failed = gemini?.key && gemini.status === "failed";
+  const checking = gemini?.key && gemini.status === "unchecked";
+  const live = mode === "gemini" && !checking;
+  const label = failed ? "Gemini error" : checking ? "Checking Gemini…" : live ? "Gemini live" : "Offline mode";
+  const cls = failed ? "bg-red-500/15 text-red-300 ring-red-500/40"
+    : live ? "bg-gemini/15 text-gemini ring-gemini/30" : "bg-ink-700 text-ink-300 ring-ink-600";
+  const dot = failed ? "bg-red-400" : live ? "bg-gemini animate-pulse" : "bg-ink-400";
+  const title = failed ? `No Gemini model answered. ${gemini.error}` : live ? `Model: ${gemini?.model || ""}` : "No Gemini key set";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold whitespace-nowrap ${small ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${gemini ? "bg-gemini/15 text-gemini ring-1 ring-gemini/30" : "bg-ink-700 text-ink-300 ring-1 ring-ink-600"}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${gemini ? "bg-gemini animate-pulse" : "bg-ink-400"}`} />
-      {gemini ? "Gemini live" : "Offline mode"}
+    <span title={title} onClick={() => failed && alert(title)}
+      className={`inline-flex cursor-default items-center gap-1.5 rounded-full font-semibold whitespace-nowrap ring-1 ${small ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      {label}
     </span>
   );
 }

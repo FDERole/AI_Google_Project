@@ -13,7 +13,7 @@ export default function Landing({ live }) {
       <div className="mx-auto max-w-6xl px-5 py-10 md:py-16">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3"><Eye size={40} /><span className="text-lg font-extrabold tracking-tight">Sanjaya</span></div>
-          <ModeBadge mode={dashboard?.mode} />
+          <ModeBadge mode={dashboard?.mode} gemini={dashboard?.gemini} />
         </div>
 
         <div className="mt-12 grid items-center gap-10 md:grid-cols-2">

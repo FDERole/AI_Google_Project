@@ -152,6 +152,8 @@ class Engine:
         return {
             "now": now_ms(),
             "mode": self.brain.mode,
+            "gemini": {"key": self.brain.gemini.client is not None, "status": self.brain.gemini.status,
+                       "model": self.brain.gemini.model, "error": self.brain.gemini.error},
             "speed": self.speed,
             "risk": risk.evaluate(self.plant, self.active_changes()),
             "changes": list(reversed(self.changes))[:30],
@@ -294,6 +296,8 @@ class Engine:
                             f"Gemini error: {err}" if err else "The recording was silent or too short.",
                             mode=self.brain.mode, level="watch")
             sorry = "I couldn't hear that voice note clearly. Please try again, type it, or use the buttons."
+            if err:
+                sorry += f" (Gemini error: {err[:160]})"
             await self.add_message(self._msg("sanjaya", "text", sorry, speak=self._speak([author], sorry)))
             return
 
@@ -956,7 +960,7 @@ class Engine:
             if self.brain.mode == "gemini":
                 known = {b["tag"] for h in self.plant.hazards for b in h["barriers"]}
                 try:
-                    draft = await asyncio.to_thread(onboarding.extract_with_gemini, self.brain.gemini.client,
+                    draft = await asyncio.to_thread(onboarding.extract_with_gemini, self.brain.gemini,
                                                     attachments, known)
                     mode = "gemini"
                 except Exception as exc:

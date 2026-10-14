@@ -58,6 +58,24 @@ def _demo_attachment(ref):
     raise HTTPException(400, f"Unknown demo attachment {ref}")
 
 
+@app.on_event("startup")
+async def check_gemini():
+    import asyncio
+    await asyncio.to_thread(engine.brain.gemini.check)
+    await engine.push_dashboard()
+
+
+@app.get("/api/gemini")
+async def gemini_status():
+    """Re-run the Gemini check and report which model works (or why none does)."""
+    import asyncio
+    await asyncio.to_thread(engine.brain.gemini.check)
+    await engine.push_dashboard()
+    g = engine.brain.gemini
+    return {"key_set": g.client is not None, "status": g.status, "model": g.model, "error": g.error,
+            "mode": engine.brain.mode}
+
+
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "index.html")
@@ -75,7 +93,8 @@ def manifest():
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True, "mode": engine.brain.mode}
+    g = engine.brain.gemini
+    return {"ok": True, "mode": engine.brain.mode, "gemini": g.status, "model": g.model, "error": g.error}
 
 
 @app.get("/api/bootstrap")
