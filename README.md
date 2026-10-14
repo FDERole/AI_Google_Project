@@ -51,7 +51,7 @@ export GEMINI_API_KEY=...          # optional; without it Sanjaya runs in offlin
 uvicorn app.main:app --port 8080
 ```
 
-Open http://localhost:8080. The built React app is committed in `static/`, so Node isn't needed to run it.
+Open http://localhost:8080. Check which Gemini model it picked at http://localhost:8080/api/gemini. The built React app is committed in `static/`, so Node isn't needed to run it.
 To change the frontend: `cd web && npm install && npm run dev` (hot reload, proxies to :8080), then `npm run build`.
 
 Tests: `pip install -r requirements-dev.txt && pytest -q` (the whole demo story end to end, offline).
@@ -85,8 +85,8 @@ The Dockerfile builds the React app and the server. `--max-instances 1` keeps ev
 | Variable | Default | Meaning |
 |---|---|---|
 | `GEMINI_API_KEY` | none | Turns on Gemini. Without it, offline mode. |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Model for reading inputs, the agent and onboarding (needs JSON schema + tools). |
-| `GEMINI_LIVE_MODEL` | `gemini-2.5-flash-native-audio-preview-09-2025` | Live API model for voice calls. |
+| `GEMINI_MODEL` | auto | Leave unset: Sanjaya lists the models your key can use and picks the newest Flash, switching automatically if one is busy (503) or retired (404). Set it only to force a model. |
+| `GEMINI_LIVE_MODEL` | auto | Live API model for voice calls; discovered from your key's models if unset. |
 | `SANJAYA_DEMO_SPEED` | `1` | Demo clock multiplier (also adjustable live in the 🎬 drawer). |
 | `SANJAYA_ESCALATE_AFTER_MIN` | `3` | Plant minutes before an unanswered request escalates. |
 | `SANJAYA_REMIND_BEFORE_MIN` | `5` | Plant minutes before the limit at which the requester is reminded. |

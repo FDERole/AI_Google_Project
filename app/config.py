@@ -8,7 +8,8 @@ RUNTIME_DIR = Path(os.environ.get("SANJAYA_RUNTIME_DIR", ROOT / "runtime"))
 UPLOAD_DIR = RUNTIME_DIR / "uploads"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# Empty = pick automatically from the models this key can use (recommended; model names get retired).
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "")
 
 # Demo speed: 1 = real time. 20 = one plant minute passes in 3 real seconds.
 DEMO_SPEED = float(os.environ.get("SANJAYA_DEMO_SPEED", "1"))

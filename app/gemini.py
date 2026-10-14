@@ -23,8 +23,33 @@ except ImportError:  # pragma: no cover
 
 log = logging.getLogger("sanjaya.gemini")
 
-# Tried in order if GEMINI_MODEL doesn't answer (model names get retired over time).
-FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+# Last-resort names if listing models fails. Normally the model is picked from what the key can use.
+FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"]
+SKIP = ("image", "tts", "embedding", "live", "audio", "aqa", "computer", "robotics", "learnlm", "nano", "gemma")
+
+
+def _version(name):
+    m = re.search(r"gemini-(\d+(?:\.\d+)?)", name)
+    return float(m.group(1)) if m else 0.0
+
+
+def _rank(name):
+    """Prefer the newest stable Flash: fast enough for live chat, smart enough for tools and JSON."""
+    if not name.startswith("gemini") or any(k in name for k in SKIP):
+        return None
+    score = _version(name) * 10 if "latest" not in name else 1
+    if "flash" in name and "lite" not in name:
+        score += 3
+    elif "flash-lite" in name:
+        score += 1
+    if "preview" in name or "exp" in name:
+        score -= 2
+    return score
+
+
+def _gone(exc):
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    return code == 404 or "NOT_FOUND" in str(exc) or "no longer available" in str(exc)
 
 
 def _transient(exc):
@@ -71,7 +96,9 @@ class Gemini:
     def __init__(self):
         self.client = genai.Client(api_key=GEMINI_API_KEY) if (genai and GEMINI_API_KEY) else None
 
-    model = GEMINI_MODEL
+    model = GEMINI_MODEL or FALLBACK_MODELS[0]
+    candidates = list(FALLBACK_MODELS)
+    live_model = None
     status = "unchecked"   # unchecked | ok | failed
     error = None
 
@@ -80,53 +107,87 @@ class Gemini:
         return self.client is not None and self.status != "failed"
 
     def generate(self, **kwargs):
-        """generate_content that rides out overload: retry briefly, then try the other models.
+        """generate_content that keeps working when a model is busy or retired.
 
-        503 (model overloaded) and 429 (rate limit) are common and temporary. Any other error is raised at once.
+        503/429 (overloaded, rate limited): retry once, then move to the next working model.
+        404 (model retired for this key): move to the next model straight away.
+        Anything else (bad key, bad request) is raised at once.
         """
-        models = list(dict.fromkeys([self.model] + FALLBACK_MODELS))
+        models = list(dict.fromkeys([self.model] + self.candidates))
         last = None
         for i, name in enumerate(models):
             for attempt in range(2 if i == 0 else 1):
                 try:
                     resp = self.client.models.generate_content(model=name, **kwargs)
                     if name != self.model:
-                        log.warning("Gemini %s busy; switched to %s", self.model, name)
+                        log.warning("Gemini %s unavailable; switched to %s", self.model, name)
                         self.model = name
                     return resp
                 except Exception as exc:
                     last = exc
+                    if _gone(exc):
+                        break
                     if not _transient(exc):
                         raise
-                    log.warning("Gemini %s busy (%s), %s", name, str(exc)[:80],
-                                "retrying" if attempt == 0 and i == 0 else "trying next model")
+                    log.warning("Gemini %s busy (%s)", name, str(exc)[:80])
                     if attempt == 0 and i == 0:
                         time.sleep(0.8)
         raise last
 
+    def discover(self):
+        """Ask Google which models this key can use. Model names get retired, so never rely on one."""
+        text, live = [], []
+        try:
+            for m in self.client.models.list():
+                name = (m.name or "").split("/")[-1]
+                actions = m.supported_actions or []
+                if "generateContent" in actions and _rank(name) is not None:
+                    text.append(name)
+                if "bidiGenerateContent" in actions and ("live" in name or "native-audio" in name):
+                    live.append(name)
+        except Exception as exc:
+            log.warning("Couldn't list Gemini models: %s", str(exc)[:160])
+        text.sort(key=_rank, reverse=True)
+        live.sort(key=lambda n: (_version(n), "preview" not in n), reverse=True)
+        return text, live
+
     def check(self):
-        """Find a model that actually answers with this key. Called once at startup."""
+        """Find a model that actually answers with this key. Called once at startup (and by /api/gemini)."""
         if self.client is None:
             return
-        candidates = list(dict.fromkeys([GEMINI_MODEL] + FALLBACK_MODELS))
-        errors = []
-        for name in candidates:
+        discovered, live = self.discover()
+        if live:
+            self.live_model = live[0]
+        explicit = [GEMINI_MODEL] if GEMINI_MODEL else []
+        queue = list(dict.fromkeys(explicit + discovered[:6] + FALLBACK_MODELS))
+        errors, tried = [], set()
+        while queue:
+            name = queue.pop(0)
+            if name in tried:
+                continue
+            tried.add(name)
             try:
                 resp = self.client.models.generate_content(model=name, contents="Reply with the word OK.")
                 if resp.text:
-                    self.model, self.status, self.error = name, "ok", None
-                    log.info("Gemini ready with model %s", name)
+                    self._ready(name, [n for n in discovered + FALLBACK_MODELS if n != name])
                     return
             except Exception as exc:
                 errors.append(f"{name}: {str(exc)[:160]}")
-                if _transient(exc) and self.status != "ok":
-                    # Overloaded right now, but the key and model work: use it and let calls retry/fall back.
-                    self.model, self.status, self.error = name, "ok", None
-                    log.warning("Gemini %s is busy at startup; using it with automatic fallback", name)
+                suggested = re.search(r"use models/([\w.\-]+)", str(exc))
+                if suggested:
+                    queue.insert(0, suggested.group(1))  # the API told us which model to use
+                elif _transient(exc):
+                    # Busy right now, but this key can use it: go with it; calls retry and fall back.
+                    self._ready(name, [n for n in discovered + FALLBACK_MODELS if n != name])
                     return
         self.status = "failed"
         self.error = " | ".join(errors)[:600]
         log.error("No Gemini model worked, running offline. %s", self.error)
+
+    def _ready(self, name, others):
+        self.model, self.status, self.error = name, "ok", None
+        self.candidates = list(dict.fromkeys(others))[:5]
+        log.info("Gemini ready: model %s (fallbacks %s), live model %s", name, self.candidates, self.live_model)
 
     def _call(self, prompt, schema, attachments=()):
         parts = []

@@ -211,9 +211,17 @@ def test_onboarding_offline_draft_and_approval(engine):
     assert any(a["event"] == "risk_model_approved" for a in engine.audit)
 
 
-def test_gemini_rides_out_overload():
+def _stub_gemini(generate_content, listed=()):
     from types import SimpleNamespace
     from app.gemini import Gemini
+    g = Gemini()
+    models = [SimpleNamespace(name=f"models/{n}", supported_actions=a) for n, a in listed]
+    g.client = SimpleNamespace(models=SimpleNamespace(generate_content=generate_content, list=lambda: models))
+    return g
+
+
+def test_gemini_rides_out_overload():
+    from types import SimpleNamespace
 
     class Busy(Exception):
         code = 503
@@ -222,19 +230,49 @@ def test_gemini_rides_out_overload():
 
     def generate_content(model, **kw):
         calls.append(model)
-        if model == "gemini-2.5-flash":
+        if model == "gemini-3.8-flash":
             raise Busy("503 UNAVAILABLE. This model is currently experiencing high demand.")
         return SimpleNamespace(text="ok")
 
-    g = Gemini()
-    g.client = SimpleNamespace(models=SimpleNamespace(generate_content=generate_content))
-    g.model, g.status = "gemini-2.5-flash", "ok"
+    g = _stub_gemini(generate_content)
+    g.model, g.candidates, g.status = "gemini-3.8-flash", ["gemini-flash-latest"], "ok"
     assert g.generate(contents="hi").text == "ok"
-    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-flash-latest"]  # retry once, then switch
+    assert calls == ["gemini-3.8-flash", "gemini-3.8-flash", "gemini-flash-latest"]  # retry once, then switch
     assert g.model == "gemini-flash-latest"
 
     def bad_key(model, **kw):
         raise ValueError("400 API key not valid")
-    g.client = SimpleNamespace(models=SimpleNamespace(generate_content=bad_key))
+    g.client.models.generate_content = bad_key
     with pytest.raises(ValueError):
         g.generate(contents="hi")  # not transient: no pointless retries
+
+
+def test_gemini_picks_a_model_the_key_can_use():
+    from types import SimpleNamespace
+
+    class Gone(Exception):
+        code = 404
+
+    def generate_content(model, **kw):
+        if model != "gemini-3.8-flash":
+            raise Gone(f"404 NOT_FOUND. This model models/{model} is no longer available to new users. "
+                       "Please update your code to use models/gemini-3.8-flash for the latest features.")
+        return SimpleNamespace(text="OK")
+
+    listed = [("gemini-2.5-flash", ["generateContent"]), ("gemini-3.8-flash-image", ["generateContent"]),
+              ("gemini-3.8-pro", ["generateContent"]), ("gemini-3.8-flash-lite", ["generateContent"]),
+              ("gemini-3.8-flash-live", ["bidiGenerateContent"]), ("text-embedding-005", ["embedContent"])]
+    g = _stub_gemini(generate_content, listed)
+    text, live = g.discover()
+    assert text[0] == "gemini-3.8-flash-lite"  # newest Flash ranks above Pro (faster for live chat)
+    assert "gemini-3.8-flash-image" not in text and live == ["gemini-3.8-flash-live"]
+    g.check()
+    assert g.status == "ok" and g.model == "gemini-3.8-flash" and g.live_model == "gemini-3.8-flash-live"
+
+    # Retired mid-demo: a 404 moves on to the next model instead of failing.
+    def retired(model, **kw):
+        if model == "gemini-3.8-flash":
+            raise Gone("404 NOT_FOUND. no longer available")
+        return SimpleNamespace(text="fine")
+    g.client.models.generate_content = retired
+    assert g.generate(contents="x").text == "fine" and g.model != "gemini-3.8-flash"

@@ -15,7 +15,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 from .engine import CURRENT_TRACE
 
 log = logging.getLogger("sanjaya.live")
-LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-09-2025")
+# Empty = use the live model discovered at startup.
+LIVE_MODEL = os.environ.get("GEMINI_LIVE_MODEL", "")
 
 try:
     from google.genai import types
@@ -117,7 +118,7 @@ async def run_call(ws: WebSocket, engine, approver, req_id):
         return {"error": "unknown tool"}
 
     try:
-        async with engine.brain.gemini.client.aio.live.connect(model=LIVE_MODEL, config=config) as session:
+        async with engine.brain.gemini.client.aio.live.connect(model=LIVE_MODEL or engine.brain.gemini.live_model or "gemini-live-2.5-flash-preview", config=config) as session:
             CURRENT_TRACE.set(trace)
             await ws.send_json({"type": "ready"})
             await engine.step("phone", "Started a live voice call", engine.plant.user(approver)["title"],
