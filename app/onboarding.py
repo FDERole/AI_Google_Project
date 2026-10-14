@@ -74,8 +74,8 @@ Draft the plant's risk model:
 - gaps: things a safety officer should check because the documents are vague or silent.
 Every item must cite its source: document id (as printed in the document header/footer), section or node id,
 and page number. Use only what the documents say. Never invent numbers.""")
-    resp = client.models.generate_content(
-        model=gemini.model, contents=parts,
+    resp = gemini.generate(
+        contents=parts,
         config=types.GenerateContentConfig(response_mime_type="application/json",
                                            response_schema=RiskModelDraft, temperature=0))
     return RiskModelDraft.model_validate(json.loads(resp.text)).model_dump()

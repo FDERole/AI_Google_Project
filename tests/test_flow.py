@@ -209,3 +209,32 @@ def test_onboarding_offline_draft_and_approval(engine):
         assert await engine.approve_model("meena")
     run(go())
     assert any(a["event"] == "risk_model_approved" for a in engine.audit)
+
+
+def test_gemini_rides_out_overload():
+    from types import SimpleNamespace
+    from app.gemini import Gemini
+
+    class Busy(Exception):
+        code = 503
+
+    calls = []
+
+    def generate_content(model, **kw):
+        calls.append(model)
+        if model == "gemini-2.5-flash":
+            raise Busy("503 UNAVAILABLE. This model is currently experiencing high demand.")
+        return SimpleNamespace(text="ok")
+
+    g = Gemini()
+    g.client = SimpleNamespace(models=SimpleNamespace(generate_content=generate_content))
+    g.model, g.status = "gemini-2.5-flash", "ok"
+    assert g.generate(contents="hi").text == "ok"
+    assert calls == ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-flash-latest"]  # retry once, then switch
+    assert g.model == "gemini-flash-latest"
+
+    def bad_key(model, **kw):
+        raise ValueError("400 API key not valid")
+    g.client = SimpleNamespace(models=SimpleNamespace(generate_content=bad_key))
+    with pytest.raises(ValueError):
+        g.generate(contents="hi")  # not transient: no pointless retries

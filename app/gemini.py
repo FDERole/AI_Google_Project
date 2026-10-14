@@ -7,6 +7,7 @@ documented data by the deterministic code in engine.py and parts.py.
 import json
 import logging
 import re
+import time
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel
@@ -24,6 +25,12 @@ log = logging.getLogger("sanjaya.gemini")
 
 # Tried in order if GEMINI_MODEL doesn't answer (model names get retired over time).
 FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+
+
+def _transient(exc):
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    text = str(exc)
+    return code in (429, 500, 503, 504) or any(k in text for k in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "overloaded", "high demand"))
 
 
 class Interpretation(BaseModel):
@@ -72,6 +79,31 @@ class Gemini:
     def available(self):
         return self.client is not None and self.status != "failed"
 
+    def generate(self, **kwargs):
+        """generate_content that rides out overload: retry briefly, then try the other models.
+
+        503 (model overloaded) and 429 (rate limit) are common and temporary. Any other error is raised at once.
+        """
+        models = list(dict.fromkeys([self.model] + FALLBACK_MODELS))
+        last = None
+        for i, name in enumerate(models):
+            for attempt in range(2 if i == 0 else 1):
+                try:
+                    resp = self.client.models.generate_content(model=name, **kwargs)
+                    if name != self.model:
+                        log.warning("Gemini %s busy; switched to %s", self.model, name)
+                        self.model = name
+                    return resp
+                except Exception as exc:
+                    last = exc
+                    if not _transient(exc):
+                        raise
+                    log.warning("Gemini %s busy (%s), %s", name, str(exc)[:80],
+                                "retrying" if attempt == 0 and i == 0 else "trying next model")
+                    if attempt == 0 and i == 0:
+                        time.sleep(0.8)
+        raise last
+
     def check(self):
         """Find a model that actually answers with this key. Called once at startup."""
         if self.client is None:
@@ -87,6 +119,11 @@ class Gemini:
                     return
             except Exception as exc:
                 errors.append(f"{name}: {str(exc)[:160]}")
+                if _transient(exc) and self.status != "ok":
+                    # Overloaded right now, but the key and model work: use it and let calls retry/fall back.
+                    self.model, self.status, self.error = name, "ok", None
+                    log.warning("Gemini %s is busy at startup; using it with automatic fallback", name)
+                    return
         self.status = "failed"
         self.error = " | ".join(errors)[:600]
         log.error("No Gemini model worked, running offline. %s", self.error)
@@ -96,8 +133,7 @@ class Gemini:
         for att in attachments:
             parts.append(types.Part.from_bytes(data=att["bytes"], mime_type=att["mime"]))
         parts.append(prompt)
-        resp = self.client.models.generate_content(
-            model=self.model,
+        resp = self.generate(
             contents=parts,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -154,7 +190,7 @@ Is that a yes (confirming), a no (correcting), or unclear? Include the transcrip
         prompt = ("Transcribe this voice note exactly, in its original language (Hindi in Devanagari, Hinglish "
                   "in Latin script, English as spoken). Return only the transcript, or an empty string if silent.")
         parts = [types.Part.from_bytes(data=a["bytes"], mime_type=a["mime"]) for a in attachments] + [prompt]
-        resp = self.client.models.generate_content(model=self.model, contents=parts)
+        resp = self.generate(contents=parts)
         return (resp.text or "").strip()
 
     def extract_specs(self, attachment):
@@ -203,7 +239,7 @@ def _ask(self, question, asker, tool_call, on_tool):
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
     for _ in range(6):
-        resp = self.client.models.generate_content(model=self.model, contents=contents, config=config)
+        resp = self.generate(contents=contents, config=config)
         calls = resp.function_calls or []
         if not calls:
             answer = (resp.text or "").strip()
