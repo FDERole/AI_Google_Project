@@ -1,93 +1,20 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#14213d">
-  <title>Sanjaya</title>
-  <link rel="manifest" href="/static/manifest.json">
-  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <!-- Join screen: pick who you are. Tapping "Join shift" also unlocks audio on phones. -->
-  <section id="join" class="screen">
-    <div class="join-card">
-      <img src="/static/icon.svg" class="logo" alt="">
-      <h1>Sanjaya</h1>
-      <p class="tagline">Watches every change on the factory floor</p>
-      <p class="plant" id="plant-name"></p>
-      <div id="people" class="people"></div>
-      <button id="join-btn" class="primary" disabled>Join shift</button>
-      <p class="hint">Fictional demo plant. Sanjaya advises and records. People decide.</p>
-    </div>
-  </section>
-
-  <!-- Chat + dashboard -->
-  <section id="main" class="screen hidden">
-    <header class="topbar">
-      <img src="/static/icon.svg" class="mini-logo" alt="">
-      <div class="title">
-        <strong id="group-name"></strong>
-        <span id="me-label"></span>
-      </div>
-      <span id="mode-badge" class="badge"></span>
-      <button id="tab-btn" class="icon-btn" title="Dashboard">📊</button>
-      <button id="demo-btn" class="icon-btn" title="Demo controls">🎬</button>
-    </header>
-
-    <div id="speaking" class="speaking hidden">🔊 Sanjaya is speaking…</div>
-
-    <main id="chat" class="chat"></main>
-
-    <main id="dash" class="dash hidden">
-      <h2>Risk stack</h2>
-      <div id="stacks"></div>
-      <h2>Live timers</h2>
-      <div id="timers" class="list"></div>
-      <h2>Requests</h2>
-      <div id="requests" class="list"></div>
-      <h2>Change log</h2>
-      <div id="changes" class="list"></div>
-      <h2>Audit trail <a href="/api/audit" target="_blank" class="small-link">download</a></h2>
-      <div id="audit" class="list audit"></div>
-    </main>
-
-    <footer id="composer" class="composer">
-      <div id="reply-bar" class="reply-bar hidden"><span></span><button id="reply-cancel">✕</button></div>
-      <div class="row">
-        <label class="icon-btn attach" title="Photo or document">📎
-          <input id="file" type="file" accept="image/*,application/pdf,audio/*" multiple hidden>
-        </label>
-        <input id="text" type="text" placeholder="Message Plant X Operations" autocomplete="off">
-        <button id="mic" class="mic" title="Hold to talk">🎤</button>
-        <button id="send" class="send" title="Send">➤</button>
-      </div>
-      <div id="attach-preview" class="attach-preview hidden"></div>
-    </footer>
-
-    <aside id="demo" class="demo hidden">
-      <div class="demo-head">
-        <strong>Demo script</strong>
-        <button id="demo-close" class="icon-btn">✕</button>
-      </div>
-      <p class="hint">Each step posts as that person, so one presenter can drive the whole story.</p>
-      <div id="demo-steps" class="demo-steps"></div>
-      <div class="demo-settings">
-        <label>Clock speed
-          <select id="speed">
-            <option value="1">1× (real time)</option>
-            <option value="10">10×</option>
-            <option value="20">20× (15 min ≈ 45 s)</option>
-            <option value="60">60×</option>
-          </select>
-        </label>
-        <label><input type="checkbox" id="offline"> Force offline mode</label>
-        <button id="reset" class="danger">Reset demo</button>
-      </div>
-    </aside>
-  </section>
-
-  <script src="/static/app.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b16" />
+    <title>Sanjaya</title>
+    <meta name="description" content="The live voice agent that watches every change on the factory floor." />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/assets/index-hkPbggCB.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CwQjbGYg.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

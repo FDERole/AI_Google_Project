@@ -1,0 +1,106 @@
+[
+ {
+  "doc": "HZ-2024",
+  "title": "HAZOP Study Report: Plant X (Spray Drying, Reaction and Solvent Areas)",
+  "page": 1,
+  "section": "1",
+  "heading": "1. Scope and method",
+  "text": "1. Scope and method This study covers spray dryer SD-1 (dryer house), reactor R-201 (reaction bay) with its steam utilities from Boiler B-1, and the solvent room with exhaust fan EF-04. Guidewords were applied node by node. Safeguards listed are the independent barriers credited against each consequence. Risk was ranked on a 5x5 matrix."
+ },
+ {
+  "doc": "HZ-2024",
+  "title": "HAZOP Study Report: Plant X (Spray Drying, Reaction and Solvent Areas)",
+  "page": 1,
+  "section": "2",
+  "heading": "2. Summary of high-risk scenarios",
+  "text": "2. Summary of high-risk scenarios Three scenarios ranked High: dust explosion in SD-1 (node SD1-2), runaway reaction in R-201 (node R201-1) and solvent vapour fire in the solvent room (node SR1-3). Each relies on several safeguards being available at the same time; the study team noted that simultaneous impairment of two or more safeguards is not covered by the ranking and must be managed through management of change."
+ },
+ {
+  "doc": "HZ-2024",
+  "title": "HAZOP Study Report: Plant X (Spray Drying, Reaction and Solvent Areas)",
+  "page": 2,
+  "section": "SD1-2",
+  "heading": "Node SD1-2: Spray dryer SD-1, drying chamber. Deviation: MORE temperature",
+  "text": "Node SD1-2: Spray dryer SD-1, drying chamber. Deviation: MORE temperature Consequence: ignition of dried powder cloud leading to dust explosion and fire in the dryer house; potential multiple fatalities (Severity 5). 1 | Inlet high-temperature alarm and interlock TAH-301 (trips burner at 180 °C) | TAH-301 2 | Batch size kept within validated limit of 400 kg per charge | PV-SD1-2024 Table 3 3 | Nitrogen inerting keeps O2 below 8% in chamber | PAL-302 4 | Explosion vent panel sized for 400 kg charge dust loading | EV-SD1 5 | Only trained operators (dryer competency card) run SD-1 | SOP-HR-05 Recommendation SD1-2.1: any bypass of TAH-301 to be treated as a change requiring plant-head approval (see SOP-SD1-03)."
+ },
+ {
+  "doc": "HZ-2024",
+  "title": "HAZOP Study Report: Plant X (Spray Drying, Reaction and Solvent Areas)",
+  "page": 3,
+  "section": "R201-1",
+  "heading": "Node R201-1: Reactor R-201. Deviation: LESS temperature during batch hold",
+  "text": "Node R201-1: Reactor R-201. Deviation: LESS temperature during batch hold Cause: loss of jacket steam from Boiler B-1. Consequence: batch cools below 55 °C; dosed reagent accumulates unreacted and can react violently when heating resumes (runaway, Severity 5). 1 | Jacket temperature control using steam from Boiler B-1 | TIC-201 / B-1 2 | Reactor high-temperature alarm TAH-201 | TAH-201 3 | Batch size within validated limit | PV-R201-2023 4 | Only trained operators run R-201 | SOP-HR-05 Recommendation R201-1.2: maximum allowable steam interruption during batch hold to be defined in the operating SOP (implemented as SOP-R201-07 §4.2: 20 minutes)."
+ },
+ {
+  "doc": "HZ-2024",
+  "title": "HAZOP Study Report: Plant X (Spray Drying, Reaction and Solvent Areas)",
+  "page": 4,
+  "section": "SR1-3",
+  "heading": "Node SR1-3: Solvent room. Deviation: LESS ventilation",
+  "text": "Node SR1-3: Solvent room. Deviation: LESS ventilation Consequence: toluene vapour accumulates towards its lower explosive limit; ignition from electrical equipment or sparks leads to fire or explosion (Severity 5). 1 | Exhaust fan EF-04 delivering at least 12,000 m3/h | EF-04 2 | Gas detector GD-07 alarms at 20% LEL | GD-07 3 | Ex-rated electrical equipment for Zone 1, IIB, T4 | AC-SR1 4 | Hot-work permit control | SOP-MNT-02 Recommendation SR1-3.2: replacement of EF-04 must be like-for-like on airflow, Ex certification, temperature class and spark-resistant impeller (see AC-SR1, PS-MECH-11)."
+ },
+ {
+  "doc": "SOP-R201-07",
+  "title": "SOP-R201-07: Reactor R-201 Batch Hold and Utility Interruptions",
+  "page": 1,
+  "section": "3",
+  "heading": "3. Batch hold",
+  "text": "3. Batch hold During batch hold the reactor contents must stay between 55 °C and 65 °C. The jacket is heated with steam from Boiler B-1 under TIC-201 control."
+ },
+ {
+  "doc": "SOP-R201-07",
+  "title": "SOP-R201-07: Reactor R-201 Batch Hold and Utility Interruptions",
+  "page": 1,
+  "section": "4.1",
+  "heading": "4.1 Planned utility interruptions",
+  "text": "4.1 Planned utility interruptions No utility serving R-201 may be interrupted during batch hold without plant-head approval."
+ },
+ {
+  "doc": "SOP-R201-07",
+  "title": "SOP-R201-07: Reactor R-201 Batch Hold and Utility Interruptions",
+  "page": 1,
+  "section": "4.2",
+  "heading": "4.2 Boiler B-1 shutdown during batch hold",
+  "text": "4.2 Boiler B-1 shutdown during batch hold Boiler B-1 may be shut down for a maximum of 20 minutes while an R-201 batch is in hold. Beyond 20 minutes the batch cools below 55 °C and unreacted reagent starts to build up, which can run away when heating resumes. The operator shall monitor TI-201 every 5 minutes and restart B-1 before 20 minutes. If B-1 cannot be restarted, stop reagent dosing and inform the plant head immediately."
+ },
+ {
+  "doc": "PV-SD1-2024",
+  "title": "Process Validation Report PV-SD1-2024: Spray Dryer SD-1",
+  "page": 1,
+  "section": "T3",
+  "heading": "Table 3: Validated operating ranges",
+  "text": "Table 3: Validated operating ranges Batch size above the validated maximum increases dust loading beyond the basis used to size explosion vent EV-SD1. Batch size per charge | 250 to 400 kg Inlet air temperature | 150 to 170 °C Chamber oxygen (inerted) | below 8%"
+ },
+ {
+  "doc": "AC-SR1",
+  "title": "Area Classification AC-SR1: Solvent Room",
+  "page": 1,
+  "section": "2",
+  "heading": "2. Classification",
+  "text": "2. Classification The solvent room is classified Zone 1, gas group IIB, temperature class T4 (toluene). All electrical equipment installed in the room must carry a valid Ex certificate for Zone 1, gas group IIB or IIC, and temperature class T4 or cooler (T5, T6)."
+ },
+ {
+  "doc": "AC-SR1",
+  "title": "Area Classification AC-SR1: Solvent Room",
+  "page": 1,
+  "section": "3",
+  "heading": "3. Mechanical equipment (plant standard PS-MECH-11)",
+  "text": "3. Mechanical equipment (plant standard PS-MECH-11) Fans handling the room atmosphere shall have spark-resistant impellers (aluminium, bronze or other non-sparking material). Mild-steel impellers are not permitted."
+ },
+ {
+  "doc": "SOP-SD1-03",
+  "title": "SOP-SD1-03: Spray Dryer Alarm Management",
+  "page": 1,
+  "section": "5.1",
+  "heading": "5.1 Alarm bypass",
+  "text": "5.1 Alarm bypass Bypassing or muting TAH-301 is a change to a safety function. It requires a written bypass permit approved by the plant head, a named person watching inlet temperature locally, and must be removed before the next batch is charged."
+ },
+ {
+  "doc": "SOP-HR-05",
+  "title": "SOP-HR-05: Operator Competency and Shift Manning",
+  "page": 1,
+  "section": "4",
+  "heading": "4. New and trainee operators",
+  "text": "4. New and trainee operators A trainee may not operate SD-1 or R-201 alone for the first 14 days. On night shift a competency-carded operator must be present in the dryer house whenever a trainee is rostered."
+ }
+]

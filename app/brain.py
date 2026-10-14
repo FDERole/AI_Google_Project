@@ -64,6 +64,10 @@ class Brain:
             return result["answer"], "gemini"
         return fallback.parse_confirmation(text), "offline"
 
+    def ask(self, question, asker, tool_call, on_tool):
+        """Free-form question -> Gemini function-calling agent over read-only plant tools. None if offline."""
+        return self._try(self.gemini.ask, question, asker, tool_call, on_tool), "gemini"
+
     def extract_specs(self, attachment):
         if attachment.get("demo_specs"):
             return attachment["demo_specs"], "offline"

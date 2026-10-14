@@ -1,5 +1,7 @@
 runtime/
 tests/
+web/node_modules/
+static/
 scripts/
 .git/
 __pycache__/

@@ -20,9 +20,13 @@ engine = Engine()
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 DEMO_MEDIA = json.loads((DATA_DIR / "demo_media.json").read_text(encoding="utf-8"))
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# The React app is built into static/ (cd web && npm run build).
+STATIC_DIR.mkdir(exist_ok=True)
+(STATIC_DIR / "assets").mkdir(exist_ok=True)
+app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
 app.mount("/media/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/media/demo", StaticFiles(directory=DATA_DIR / "demo_media"), name="demo")
+app.mount("/media/docs", StaticFiles(directory=DATA_DIR / "docs"), name="docs")
 app.mount("/media/datasheets", StaticFiles(directory=DATA_DIR / "datasheets"), name="datasheets")
 
 
@@ -59,6 +63,16 @@ def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/icon.svg")
+def icon():
+    return FileResponse(STATIC_DIR / "icon.svg")
+
+
+@app.get("/manifest.json")
+def manifest():
+    return FileResponse(STATIC_DIR / "manifest.json")
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "mode": engine.brain.mode}
@@ -85,6 +99,12 @@ async def ws(websocket: WebSocket, user: str = "dashboard"):
         pass
     finally:
         engine.clients.pop(websocket, None)
+
+
+@app.websocket("/ws/live")
+async def ws_live(websocket: WebSocket, user: str, request: str):
+    from .live import run_call
+    await run_call(websocket, engine, user, request)
 
 
 @app.post("/api/messages")
@@ -212,6 +232,38 @@ async def settings(body: SettingsIn):
         engine.brain.force_offline = body.offline
     await engine.push_dashboard()
     return {"ok": True, "speed": engine.speed, "mode": engine.brain.mode}
+
+
+@app.post("/api/onboarding/extract")
+async def onboarding_extract(user: str = Form("meena"), sample: bool = Form(False),
+                             files: List[UploadFile] = File(default=[])):
+    from .onboarding import sample_attachments
+    _user_or_404(user)
+    attachments = []
+    for f in files:
+        if not f.filename:
+            continue
+        stored = f"{uuid.uuid4().hex}.pdf"
+        (UPLOAD_DIR / stored).write_bytes(await f.read())
+        attachments.append({"kind": "document", "path": UPLOAD_DIR / stored, "mime": "application/pdf",
+                            "name": f.filename, "url": f"/media/uploads/{stored}"})
+    if sample or not attachments:
+        attachments = sample_attachments()
+    return await engine.onboard(attachments, user)
+
+
+@app.post("/api/onboarding/approve")
+async def onboarding_approve(body: UserIn):
+    if not await engine.approve_model(_user_or_404(body.user)):
+        raise HTTPException(409, "No draft to approve")
+    return {"ok": True}
+
+
+@app.get("/api/docs")
+def docs_list():
+    from .onboarding import SAMPLE_DOCS
+    return [{"id": d, "url": f"/media/docs/{d}.pdf",
+             "title": next((s["title"] for s in engine.docs.sections if s["doc"] == d), d)} for d in SAMPLE_DOCS]
 
 
 @app.get("/api/audit")

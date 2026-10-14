@@ -179,3 +179,33 @@ def test_part_evaluation_case1_and_case2(engine):
         assert unrev.get("unreviewed") and not unrev["like_for_like"]
         assert any(c["kind"] == "unreviewed" for c in engine.active_changes())
     run(go())
+
+
+def test_trace_and_questions(engine):
+    async def go():
+        await engine.post("suresh", "Alarm baar baar baj raha tha, mute kar diya",
+                          [_demo_attachment("demo:alarm_panel_muted.png")])
+        await engine.post("arjun", "Sanjaya, boiler kitni der band kar sakte hain?")
+        await engine.post("ravi", "Sanjaya, what's the riskiest thing right now?")
+    run(go())
+    t = engine.traces[0]
+    labels = [s["label"] for s in t["steps"]]
+    assert "Checked the plant's rules" in labels and t["status"] == "done"
+    rule = next(s for s in t["steps"] if s["label"] == "Checked the plant's rules")
+    assert rule["cite"] == "SOP-SD1-03 §5.1, p.1"
+    answers = [m for m in engine.messages if m["data"].get("answer")]
+    assert "SOP-R201-07 §4.2" in answers[0]["text"] and "20 minutes" in answers[0]["text"]
+    assert "dust explosion in spray dryer SD-1" in answers[1]["text"]
+    assert all(m["data"].get("trace_id") for m in answers)
+
+
+def test_onboarding_offline_draft_and_approval(engine):
+    from app.onboarding import sample_attachments
+
+    async def go():
+        draft = await engine.onboard(sample_attachments(), "meena")
+        assert len(draft["hazards"]) == 3 and len(draft["limits"]) == 3 and draft["gaps"]
+        assert draft["limits"][0]["source"] == {"doc": "SOP-R201-07", "section": "4.2", "page": 1}
+        assert await engine.approve_model("meena")
+    run(go())
+    assert any(a["event"] == "risk_model_approved" for a in engine.audit)

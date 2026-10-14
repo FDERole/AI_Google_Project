@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink-950: #050812;
+  --color-ink-900: #0a0f1e;
+  --color-ink-850: #0e1426;
+  --color-ink-800: #131a30;
+  --color-ink-700: #1c2542;
+  --color-ink-600: #2a3558;
+  --color-ink-500: #45507a;
+  --color-ink-400: #7480a8;
+  --color-ink-300: #a3adcf;
+  --color-ink-200: #cdd3ea;
+  --color-ink-100: #e9ecf7;
+
+  --color-saffron-300: #ffd27a;
+  --color-saffron-400: #ffbe45;
+  --color-saffron-500: #fca311;
+  --color-saffron-600: #d98400;
+
+  --color-safe: #22c55e;
+  --color-watch: #eab308;
+  --color-elevated: #f97316;
+  --color-critical: #ef4444;
+  --color-gemini: #6ea8ff;
+
+  --animate-pulse-ring: pulse-ring 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.glass {
+  background: linear-gradient(180deg, rgba(28, 37, 66, 0.72), rgba(14, 20, 38, 0.72));
+  border: 1px solid rgba(116, 128, 168, 0.18);
+  backdrop-filter: blur(14px);
+}
+.glow-critical { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5), 0 0 40px -6px rgba(239, 68, 68, 0.55); }
+.glow-elevated { box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45), 0 0 32px -8px rgba(249, 115, 22, 0.45); }
+.glow-saffron { box-shadow: 0 0 0 1px rgba(252, 163, 17, 0.45), 0 0 32px -8px rgba(252, 163, 17, 0.5); }
+
+.grid-bg {
+  background-image:
+    radial-gradient(circle at 20% -10%, rgba(252, 163, 17, 0.10), transparent 40%),
+    radial-gradient(circle at 110% 10%, rgba(110, 168, 255, 0.10), transparent 40%),
+    linear-gradient(rgba(116, 128, 168, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(116, 128, 168, 0.06) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+}
+
+.thinking-text {
+  background: linear-gradient(90deg, var(--color-ink-300), var(--color-saffron-300), var(--color-ink-300));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-shimmer);
+}
+
+.scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgba(116, 128, 168, 0.3); border-radius: 99px; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: rgba(116, 128, 168, 0.3) transparent; }
+
+.no-select { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
