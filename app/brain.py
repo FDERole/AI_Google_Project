@@ -20,6 +20,7 @@ class Brain:
         self.plant = plant
         self.gemini = Gemini()
         self.force_offline = False
+        self.last_error = None
 
     @property
     def mode(self):
@@ -32,6 +33,7 @@ class Brain:
             return fn(*args)
         except Exception as exc:  # network, quota, schema - fall back, never crash the demo
             log.warning("Gemini call failed, using fallback: %s", exc)
+            self.last_error = str(exc)[:300]
             return None
 
     def interpret(self, text, author_id, attachments=(), context=""):
@@ -47,6 +49,7 @@ class Brain:
     def transcribe(self, attachments, client_transcript=None):
         voice = [a for a in attachments if a.get("kind") == "voice"]
         if voice:
+            self.last_error = None
             result = self._try(self.gemini.transcribe, _gemini_parts(voice))
             if result:
                 return result, "gemini"

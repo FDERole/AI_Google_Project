@@ -121,7 +121,8 @@ Is that a yes (confirming), a no (correcting), or unclear? Include the transcrip
         return self._call(prompt, Confirmation, attachments)
 
     def transcribe(self, attachments):
-        prompt = "Transcribe this voice note exactly, in its original language. Return only the transcript."
+        prompt = ("Transcribe this voice note exactly, in its original language (Hindi in Devanagari, Hinglish "
+                  "in Latin script, English as spoken). Return only the transcript, or an empty string if silent.")
         parts = [types.Part.from_bytes(data=a["bytes"], mime_type=a["mime"]) for a in attachments] + [prompt]
         resp = self.client.models.generate_content(model=GEMINI_MODEL, contents=parts)
         return resp.text.strip()

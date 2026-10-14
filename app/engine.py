@@ -289,6 +289,10 @@ class Engine:
             return
 
         if msg["type"] == "voice" and not text.strip():
+            err = self.brain.last_error
+            await self.step("alert", "Couldn't transcribe the voice note",
+                            f"Gemini error: {err}" if err else "The recording was silent or too short.",
+                            mode=self.brain.mode, level="watch")
             sorry = "I couldn't hear that voice note clearly. Please try again, type it, or use the buttons."
             await self.add_message(self._msg("sanjaya", "text", sorry, speak=self._speak([author], sorry)))
             return

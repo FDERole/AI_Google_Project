@@ -124,7 +124,7 @@ async def post_message(
             continue
         mime = f.content_type or mimetypes.guess_type(f.filename)[0] or "application/octet-stream"
         base = mime.split(";")[0]
-        ext = {"audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a"}.get(base) or \
+        ext = {"audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/wav": ".wav"}.get(base) or \
             mimetypes.guess_extension(base) or ""
         stored = f"{uuid.uuid4().hex}{ext}"
         data = await f.read()

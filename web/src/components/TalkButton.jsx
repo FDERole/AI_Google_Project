@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Mic } from "lucide-react";
 import { postMessage } from "../store";
+import { toWav16k } from "../wav";
 
 /*
  * Hold to talk. Records audio (sent to Gemini for transcription when it's on) and, where the browser
@@ -79,7 +80,14 @@ export default function TalkButton({ me, lang = "en-IN", replyTo, label, round =
     const transcript = session.transcript.trim();
     const blob = session.chunks.length ? new Blob(session.chunks, { type: session.mr?.mimeType || "audio/webm" }) : null;
     if ((!blob || blob.size < 800) && !transcript) return;
-    const files = blob ? [new File([blob], "voice.webm", { type: blob.type })] : [];
+    let files = [];
+    if (blob) {
+      try {
+        files = [await toWav16k(blob)];
+      } catch {
+        files = [new File([blob], "voice.webm", { type: blob.type })];  // let the server try the original
+      }
+    }
     postMessage({ user: me, transcript, reply_to: replyTo, as_voice: files.length ? undefined : "true" }, files)
       .catch((e) => alert(e.message));
   };
