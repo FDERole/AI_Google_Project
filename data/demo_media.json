@@ -1,0 +1,18 @@
+{
+  "_note": "What each demo photo shows, so the scripted fallback mode can read it when Gemini is unavailable. With Gemini on, photos are read directly.",
+  "alarm_panel_muted.png": {
+    "description": "Dryer SD-1 annunciator panel: TAH-301 inlet-temperature alarm is muted, bypass key ON",
+    "kind": "routine_change",
+    "tags": ["alarm_TAH-301"],
+    "equipment": "TAH-301",
+    "summary": "Dryer high-temp alarm TAH-301 muted / bypassed"
+  },
+  "fan_nameplate_bf105.png": {
+    "description": "Nameplate of a Brightline BF-105 fan: 10,500 m3/h, 4.0 kW TEFC motor, temperature class T3",
+    "kind": "unreviewed_part_change",
+    "tags": ["fan_EF-04"],
+    "equipment": "EF-04",
+    "summary": "New fan nameplate: Brightline BF-105 (not the approved Kestrel KX-120)",
+    "model": "Brightline BF-105"
+  }
+}

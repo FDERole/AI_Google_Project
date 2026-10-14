@@ -1,0 +1,5 @@
+{
+  "_note": "The plant's datasheet library. The approved part's datasheet is used when only the new part's datasheet is supplied.",
+  "Kestrel KX-120": {"file": "kestrel_kx120.pdf", "equipment": "EF-04", "supplier": "Supplier A (current)"},
+  "Brightline BF-105": {"file": "brightline_bf105.pdf", "equipment": "EF-04", "supplier": "Supplier B"}
+}

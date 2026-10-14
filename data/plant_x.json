@@ -1,0 +1,111 @@
+{
+  "_note": "Fictional demo plant. Every limit Sanjaya quotes must come from this file (or the plant's uploaded documents) and carry its source.",
+  "plant": {
+    "id": "plant-x",
+    "name": "Plant X",
+    "company": "Deccan Fine Chem Pvt Ltd (fictional)",
+    "location": "Pashamylaram, Telangana (fictional)",
+    "group_name": "Plant X Operations"
+  },
+  "users": [
+    {"id": "arjun",  "name": "Arjun",  "role": "operator",       "title": "Operator, Reactor & Dryer",      "lang": "hi-IN"},
+    {"id": "suresh", "name": "Suresh", "role": "shift_incharge", "title": "Shift In-charge",                "lang": "hi-IN"},
+    {"id": "ravi",   "name": "Ravi",   "role": "plant_head",     "title": "Plant Head",                     "lang": "en-IN", "approver_level": 1},
+    {"id": "vikram", "name": "Vikram", "role": "works_director", "title": "Works Director",                 "lang": "en-IN", "approver_level": 2},
+    {"id": "meena",  "name": "Meena",  "role": "safety_officer", "title": "Safety Officer",                 "lang": "en-IN", "risk_alerts": true},
+    {"id": "priya",  "name": "Priya",  "role": "manager",        "title": "Maintenance & Purchase Manager", "lang": "en-IN"}
+  ],
+  "equipment": [
+    {"id": "B-1",     "name": "Boiler B-1",                    "area": "Utilities",    "aliases": ["boiler", "b-1", "b1", "बॉयलर", "boyler"]},
+    {"id": "R-201",   "name": "Reactor R-201",                 "area": "Reaction bay", "aliases": ["reactor", "r-201", "r201", "रिएक्टर"]},
+    {"id": "SD-1",    "name": "Spray dryer SD-1",              "area": "Dryer house",  "aliases": ["dryer", "spray dryer", "sd-1", "sd1", "ड्रायर"]},
+    {"id": "TAH-301", "name": "Dryer high-temp alarm TAH-301", "area": "Dryer house",  "aliases": ["alarm", "tah-301", "tah301", "अलार्म"]},
+    {"id": "EF-04",   "name": "Solvent-room exhaust fan EF-04","area": "Solvent room", "aliases": ["fan", "exhaust fan", "ef-04", "ef04", "पंखा"]},
+    {"id": "GD-07",   "name": "Solvent-room gas detector GD-07","area": "Solvent room","aliases": ["gas detector", "detector", "gd-07", "gd07"]}
+  ],
+  "hazards": [
+    {
+      "id": "H1",
+      "name": "Dust explosion in spray dryer SD-1",
+      "area": "Dryer house",
+      "source": "HAZOP HZ-SD1 (2024), node 2",
+      "barriers": [
+        {"id": "B-SD-TAH",   "name": "High-temp alarm & interlock TAH-301 in service", "tag": "alarm_TAH-301"},
+        {"id": "B-SD-BATCH", "name": "Batch size within validated limit (400 kg)",      "tag": "batch_size"},
+        {"id": "B-SD-N2",    "name": "Nitrogen inerting",                               "tag": "nitrogen_SD-1"},
+        {"id": "B-SD-VENT",  "name": "Explosion vent panel",                            "tag": "vent_SD-1"},
+        {"id": "B-SD-CREW",  "name": "Trained operator on every shift",                 "tag": "crew_training"}
+      ]
+    },
+    {
+      "id": "H2",
+      "name": "Solvent vapour fire in solvent room",
+      "area": "Solvent room",
+      "source": "HAZOP HZ-SR1 (2024), node 3",
+      "barriers": [
+        {"id": "B-SR-FAN",  "name": "Exhaust fan EF-04 delivering ≥ 12,000 m³/h", "tag": "fan_EF-04"},
+        {"id": "B-SR-GD",   "name": "Gas detector GD-07 in service",              "tag": "gas_detector_GD-07"},
+        {"id": "B-SR-EX",   "name": "Ex-rated electricals (Zone 1, IIB, T4)",     "tag": "ex_equipment_SR"},
+        {"id": "B-SR-HOT",  "name": "Hot-work permit control",                    "tag": "hot_work"}
+      ]
+    },
+    {
+      "id": "H3",
+      "name": "Runaway reaction in reactor R-201",
+      "area": "Reaction bay",
+      "source": "HAZOP HZ-R201 (2024), node 1",
+      "barriers": [
+        {"id": "B-R-TEMP",  "name": "Jacket temperature control (steam from Boiler B-1)", "tag": "boiler_B-1"},
+        {"id": "B-R-TAH",   "name": "Reactor high-temp alarm TAH-201 in service",         "tag": "alarm_TAH-201"},
+        {"id": "B-R-BATCH", "name": "Batch size within validated limit",                  "tag": "batch_size"},
+        {"id": "B-R-CREW",  "name": "Trained operator on every shift",                    "tag": "crew_training"}
+      ]
+    }
+  ],
+  "limits": [
+    {
+      "id": "L-B1-OFF",
+      "equipment": "B-1",
+      "action": "shutdown",
+      "max_minutes": 20,
+      "condition": "while an R-201 batch is in hold",
+      "consequence_en": "the R-201 batch cools below its 55 °C safe window and unreacted reagent starts to build up, which can run away on restart",
+      "consequence_hi": "R-201 का बैच 55 डिग्री से नीचे ठंडा होने लगेगा और बिना रिएक्ट हुआ केमिकल जमा होने लगेगा",
+      "source": "SOP-R201-07 §4.2"
+    },
+    {
+      "id": "L-SD-BATCH",
+      "equipment": "SD-1",
+      "action": "batch_size",
+      "max_value": 400,
+      "unit": "kg",
+      "consequence_en": "dust loading in the dryer exceeds what the explosion vent was sized for",
+      "source": "Process validation PV-SD1-2024, Table 3"
+    },
+    {
+      "id": "L-EF04-AIR",
+      "equipment": "EF-04",
+      "action": "airflow",
+      "min_value": 12000,
+      "unit": "m³/h",
+      "consequence_en": "solvent vapour can build up towards its lower explosive limit",
+      "source": "HAZOP HZ-SR1 node 3, recommendation 3.2"
+    }
+  ],
+  "part_requirements": {
+    "EF-04": {
+      "approved_model": "Kestrel KX-120",
+      "safety_role": "Keeps solvent vapour in the solvent room below explosive levels (HAZOP HZ-SR1 node 3). The room is classified Zone 1, gas group IIB, T4 (area classification drawing AC-SR1).",
+      "hazard": "H2",
+      "related_tags": ["gas_detector_GD-07"],
+      "requirements": [
+        {"key": "airflow_m3h",       "label": "Airflow for solvent room",       "rule": "min",        "value": 12000, "unit": "m³/h", "source": "HAZOP HZ-SR1 node 3"},
+        {"key": "ex_marking",        "label": "Hazardous-area certification",   "rule": "ex_gas_group", "value": ["IIB", "IIC"],       "source": "Area classification AC-SR1"},
+        {"key": "temperature_class", "label": "Motor temperature class",        "rule": "temp_class", "value": "T4",                  "source": "Area classification AC-SR1"},
+        {"key": "impeller_material", "label": "Impeller material",              "rule": "spark_resistant",                             "source": "Plant standard PS-MECH-11"},
+        {"key": "price_inr",         "label": "Price",                          "rule": "info"}
+      ]
+    }
+  },
+  "demo_active_changes": []
+}
