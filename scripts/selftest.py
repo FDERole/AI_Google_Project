@@ -77,9 +77,12 @@ def main():
 
     # 2. Understanding a chat message (JSON schema output)
     def interpret_text():
-        r = gem.interpret("Alarm baar baar baj raha tha, mute kar diya", plant.user("suresh"), plant)
-        ok = r["kind"] == "routine_change" and "alarm_TAH-301" in r["tags"]
-        return ok, f"kind={r['kind']} tags={r['tags']} summary={r['summary']!r}"
+        text = "Alarm baar baar baj raha tha, mute kar diya"
+        raw = gem.interpret(text, plant.user("suresh"), plant)
+        r, mode = engine.brain.interpret(text, "suresh")  # what the app actually uses (Gemini + safety net)
+        ok = mode == "gemini" and r["kind"] == "routine_change" and "alarm_TAH-301" in r["tags"]
+        return ok, (f"app: kind={r['kind']} tags={r['tags']} | Gemini alone ({gem.model}): tags={raw['tags']} "
+                    f"summary={raw['summary']!r}")
     run("Understand a Hinglish chat message", interpret_text)
 
     # 3. Reading a photo

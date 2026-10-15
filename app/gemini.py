@@ -35,7 +35,7 @@ def _version(name):
 
 def _rank(name):
     """Prefer the newest stable Flash: fast enough for live chat, smart enough for tools and JSON."""
-    if not name.startswith("gemini") or any(k in name for k in SKIP):
+    if not name.startswith("gemini") or "flash" not in name or any(k in name for k in SKIP):
         return None
     score = _version(name) * 10 if "latest" not in name else 1
     if "flash" in name and "lite" not in name:
@@ -94,7 +94,11 @@ class Specs(BaseModel):
 
 class Gemini:
     def __init__(self):
-        self.client = genai.Client(api_key=GEMINI_API_KEY) if (genai and GEMINI_API_KEY) else None
+        self.client = genai.Client(
+            api_key=GEMINI_API_KEY,
+            http_options=types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1), timeout=45_000),
+        ) if (genai and GEMINI_API_KEY) else None
+        self._cooldown = {}  # model -> time until which it's considered busy
 
     model = GEMINI_MODEL or FALLBACK_MODELS[0]
     candidates = list(FALLBACK_MODELS)
@@ -109,29 +113,31 @@ class Gemini:
     def generate(self, **kwargs):
         """generate_content that keeps working when a model is busy or retired.
 
-        503/429 (overloaded, rate limited): retry once, then move to the next working model.
-        404 (model retired for this key): move to the next model straight away.
+        503/429 (overloaded, over quota): mark the model busy for a minute and move to the next one at once.
+        404 (retired for this key): move on and never try it again.
         Anything else (bad key, bad request) is raised at once.
         """
+        now = time.time()
         models = list(dict.fromkeys([self.model] + self.candidates))
+        ready = [m for m in models if self._cooldown.get(m, 0) <= now]
+        order = ready + [m for m in models if m not in ready]  # busy ones last, still worth a try
         last = None
-        for i, name in enumerate(models):
-            for attempt in range(2 if i == 0 else 1):
-                try:
-                    resp = self.client.models.generate_content(model=name, **kwargs)
-                    if name != self.model:
-                        log.warning("Gemini %s unavailable; switched to %s", self.model, name)
-                        self.model = name
-                    return resp
-                except Exception as exc:
-                    last = exc
-                    if _gone(exc):
-                        break
-                    if not _transient(exc):
-                        raise
-                    log.warning("Gemini %s busy (%s)", name, str(exc)[:80])
-                    if attempt == 0 and i == 0:
-                        time.sleep(0.8)
+        for name in order:
+            try:
+                resp = self.client.models.generate_content(model=name, **kwargs)
+                if name != self.model:
+                    log.warning("Gemini %s unavailable; switched to %s", self.model, name)
+                    self.model = name
+                return resp
+            except Exception as exc:
+                last = exc
+                if _gone(exc):
+                    self.candidates = [c for c in self.candidates if c != name]
+                    continue
+                if not _transient(exc):
+                    raise
+                self._cooldown[name] = time.time() + 60
+                log.warning("Gemini %s busy (%s)", name, str(exc)[:60])
         raise last
 
     def discover(self):
@@ -205,7 +211,11 @@ class Gemini:
         return schema.model_validate(json.loads(resp.text)).model_dump()
 
     def interpret(self, text, author, plant, attachments=(), context=""):
-        tags = sorted({b["tag"] for h in plant.hazards for b in h["barriers"]})
+        tag_help = {}
+        for h in plant.hazards:
+            for b in h["barriers"]:
+                tag_help.setdefault(b["tag"], f"weakens \"{b['name']}\" ({h['name']})")
+        tags = "\n".join(f"  - {t}: {d}" for t, d in sorted(tag_help.items()))
         equipment = {e["id"]: e["name"] for e in plant.equipment.values()}
         prompt = f"""You are Sanjaya, the safety agent inside the group chat of an Indian chemical plant.
 A member posted the message below (text, and possibly a photo, voice note or document attached).
@@ -224,7 +234,10 @@ Classify it:
 - "started" / "finished": the author reports starting or finishing an approved change.
 - "chat": anything else.
 
-tags: choose ONLY from this list the safeguard tags the change weakens: {tags}
+tags: for a routine_change, list EVERY safeguard tag the change weakens (usually at least one), choosing only
+from this list. A muted or bypassed alarm, a bigger batch, a trainee on shift, a detector or fan out of service
+all weaken a safeguard:
+{tags}
 equipment: one id from {json.dumps(equipment)} or null.
 action: "shutdown" for shutdown requests, otherwise null.
 requested_minutes: only if the author states a duration.

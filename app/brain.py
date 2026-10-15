@@ -43,6 +43,15 @@ class Brain:
             result["tags"] = [t for t in result["tags"] if t in self._known_tags()]
             if result.get("equipment") not in self.plant.equipment:
                 result["equipment"] = None
+            # Safety net: a change the plant's keyword rules recognise must never lose its safeguard tag,
+            # or it would silently drop out of the risk stack.
+            if result["kind"] in ("routine_change", "chat"):
+                rules = fallback.interpret(text, self.plant, attachments)
+                if rules["kind"] == "routine_change":
+                    result["tags"] = sorted(set(result["tags"]) | set(rules["tags"]))
+                    if result["kind"] == "chat":
+                        result.update(kind="routine_change", summary=rules["summary"])
+                    result["equipment"] = result.get("equipment") or rules.get("equipment")
             return result, "gemini"
         return fallback.interpret(text, self.plant, attachments), "offline"
 

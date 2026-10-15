@@ -237,8 +237,13 @@ def test_gemini_rides_out_overload():
     g = _stub_gemini(generate_content)
     g.model, g.candidates, g.status = "gemini-3.8-flash", ["gemini-flash-latest"], "ok"
     assert g.generate(contents="hi").text == "ok"
-    assert calls == ["gemini-3.8-flash", "gemini-3.8-flash", "gemini-flash-latest"]  # retry once, then switch
+    assert calls == ["gemini-3.8-flash", "gemini-flash-latest"]  # busy -> next model at once, no waiting
     assert g.model == "gemini-flash-latest"
+    calls.clear()
+    g.model = "gemini-flash-latest"
+    g.candidates = ["gemini-3.8-flash"]
+    g.generate(contents="again")
+    assert calls == ["gemini-flash-latest"]  # the busy model is on cooldown, not retried
 
     def bad_key(model, **kw):
         raise ValueError("400 API key not valid")
@@ -264,7 +269,7 @@ def test_gemini_picks_a_model_the_key_can_use():
               ("gemini-3.8-flash-live", ["bidiGenerateContent"]), ("text-embedding-005", ["embedContent"])]
     g = _stub_gemini(generate_content, listed)
     text, live = g.discover()
-    assert text[0] == "gemini-3.8-flash-lite"  # newest Flash ranks above Pro (faster for live chat)
+    assert text == ["gemini-3.8-flash-lite", "gemini-2.5-flash"]  # Flash only: no Pro, image or live models
     assert "gemini-3.8-flash-image" not in text and live == ["gemini-3.8-flash-live"]
     g.check()
     assert g.status == "ok" and g.model == "gemini-3.8-flash" and g.live_model == "gemini-3.8-flash-live"
@@ -276,3 +281,15 @@ def test_gemini_picks_a_model_the_key_can_use():
         return SimpleNamespace(text="fine")
     g.client.models.generate_content = retired
     assert g.generate(contents="x").text == "fine" and g.model != "gemini-3.8-flash"
+
+
+def test_safety_net_keeps_safeguard_tags_when_gemini_drops_them(engine):
+    """Real Gemini (flash-lite) returned kind=routine_change with tags=[] for this message."""
+    engine.brain.force_offline = False
+    engine.brain.gemini.client = object()
+    engine.brain.gemini.status = "ok"
+    engine.brain.gemini.interpret = lambda *a, **k: {
+        "kind": "routine_change", "summary": "Suresh muted an active alarm.", "tags": [], "equipment": None,
+        "action": None, "requested_minutes": None, "model": None, "seen": None, "transcript": None}
+    r, mode = engine.brain.interpret("Alarm baar baar baj raha tha, mute kar diya", "suresh")
+    assert mode == "gemini" and r["tags"] == ["alarm_TAH-301"] and r["summary"] == "Suresh muted an active alarm."
